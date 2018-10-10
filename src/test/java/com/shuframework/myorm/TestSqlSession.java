@@ -26,9 +26,9 @@ public class TestSqlSession {
         MySqlSession sqlSession = new DefaultSqlSession();
 
         SysUser user = new SysUser();
-        user.setId(14L);
-        user.setName("test14");
-        user.setLoginName("test14");
+//        user.setId(15L);
+        user.setName("test16");
+        user.setLoginName("test16");
         user.setCreateTime(new Date());
 
         int resultNum = sqlSession.insert(user);
@@ -46,6 +46,14 @@ public class TestSqlSession {
 
         int resultNum = sqlSession.updateById(user);
         System.out.println(resultNum);
+    }
+
+    @Test
+    public void selectById_test1(){
+        MySqlSession sqlSession = new DefaultSqlSession();
+
+        SysUser user = sqlSession.selectById(SysUser.class, 3L);
+        System.out.println(user);
     }
 
 }
