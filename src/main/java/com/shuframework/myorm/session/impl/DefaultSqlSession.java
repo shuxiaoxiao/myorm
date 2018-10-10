@@ -3,6 +3,7 @@ package com.shuframework.myorm.session.impl;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -15,13 +16,33 @@ import com.shuframework.myorm.session.MySqlSession;
 import com.shuframework.myorm.util.JdbcUtil;
 
 
-public class DefaultSqlSession<T> implements MySqlSession<T>{
+public class DefaultSqlSession implements MySqlSession{
 	
 	private Connection connection = DBManager.getConn();
 
 
 	@Override
-	public int insert(T bean) {
+	public <T> int insert(T bean) {
+		if (bean == null){
+			throw new IllegalArgumentException("插入的元素为空");
+		}
+		Class clazz = bean.getClass();
+		String tableName = getTableName(clazz);
+		Field[] fields = clazz.getDeclaredFields();
+		if (fields == null || fields.length == 0){
+			throw new RuntimeException(bean + "没有属性");
+		}
+
+		//参数个数与字段个数不对应，改为用集合
+		List<Object> params = new ArrayList<>();
+		String sql = getInsertSqlAndParams(tableName, fields, bean, params);
+		System.out.println("insertSql = " + sql);
+		System.out.println(params);
+		return JdbcUtil.update(connection, sql, params);
+	}
+
+	@Override
+	public <T> int insertAllColumn(T bean) {
 		if (bean == null){
 			throw new IllegalArgumentException("插入的元素为空");
 		}
@@ -33,33 +54,14 @@ public class DefaultSqlSession<T> implements MySqlSession<T>{
 		}
 
 		Object[] params = new Object[fields.length];
-		String sql = getInsertSqlAndParams(tableName, fields, bean, params);
+		String sql = getInsertAllColumnSqlAndParams(tableName, fields, bean, params);
 		System.out.println("insertSql = " + sql);
 		System.out.println(Arrays.toString(params));
 		return JdbcUtil.update(connection, sql, params);
 	}
 
 	@Override
-	public int insertAllColumn(T bean) {
-		if (bean == null){
-			throw new IllegalArgumentException("插入的元素为空");
-		}
-		Class clazz = bean.getClass();
-		String tableName = getTableName(clazz);
-		Field[] fields = clazz.getDeclaredFields();
-		if (fields == null || fields.length == 0){
-			throw new RuntimeException(bean + "没有属性");
-		}
-
-		Object[] params = new Object[fields.length];
-		String sql = getInsertSqlAndParams(tableName, fields, bean, params);
-		System.out.println("insertSql = " + sql);
-		System.out.println(Arrays.toString(params));
-		return JdbcUtil.update(connection, sql, params);
-	}
-
-	@Override
-	public int updateById(T bean) {
+	public <T> int updateById(T bean) {
 		if (bean == null){
 			throw new IllegalArgumentException("修改的元素为空");
 		}
@@ -78,24 +80,34 @@ public class DefaultSqlSession<T> implements MySqlSession<T>{
 	}
 
 	@Override
-	public T selectById(Serializable id) {
-//		//获得对象
-//		Class<SysUser> clazz = SysUser.class;
-//		String sql = String.format(SqlMethodEnum.SELECT_BY_ID.getSql(), "*", "sys_user");
-//		List<Object> params = new ArrayList<>();
-//		params.add(id);
-//		T t = null;
-//		try {
-//			t = JdbcUtil.query2Bean(connection, sql, clazz, params);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		return t;
-		return null;
+	public <T> T selectById(Class clazz, Serializable id) {
+		String tableName = getTableName(clazz);
+		String idName = "";
+		Field[] fields = clazz.getDeclaredFields();
+		for (int i = 0, max = fields.length; i < max; i ++) {
+			fields[i].setAccessible(true);
+			// 找到id对应的列名和值
+			if (fields[i].isAnnotationPresent(TableId.class)) {
+				idName = fields[0].getAnnotation(TableId.class).value();
+			}
+		}
+		String sql = String.format(SqlMethodEnum.SELECT_BY_ID.getSql(), "*", tableName, idName);
+		List<Object> params = new ArrayList<>();
+		params.add(id);
+		System.out.println("selectSql = " + sql);
+		System.out.println(params);
+//		System.out.println(Arrays.toString(params));
+		T t = null;
+		try {
+			t = JdbcUtil.query2Bean(connection, sql, clazz, params);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return t;
 	}
 
 	@Override
-	public List<T> selectList(String sql, Class<T> clazz, List<?> params) {
+	public <T> List<T> selectList(String sql, Class clazz, List<?> params) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -110,7 +122,61 @@ public class DefaultSqlSession<T> implements MySqlSession<T>{
 		return tableAnno.value();
 	}
 
-	private String getInsertSqlAndParams(String tableName, Field[] fields, T element, Object[] params) {
+	/**
+	 * 有值才会拼接, 参数个数与字段个数不对应，改为用集合
+	 * @param tableName
+	 * @param fields
+	 * @param element
+	 * @param params
+	 * @param <T>
+	 * @return
+	 */
+	private <T> String getInsertSqlAndParams(String tableName, Field[] fields, T element, List<Object> params) {
+		int length = fields.length;
+		// 添加参数占位符?
+		StringBuilder filedSql = new StringBuilder();
+		StringBuilder paramSql = new StringBuilder(length*2);
+		try {
+			for (int i = 0; i < length; i ++){
+				fields[i].setAccessible(true);
+				Object objVal = fields[i].get(element);
+				if (objVal != null){
+					params.add(objVal);
+					paramSql.append("?,");
+
+					if (fields[i].isAnnotationPresent(TableId.class)) {
+						TableId id = fields[i].getAnnotation(TableId.class);
+						String idName = id.value();
+						filedSql.append(idName).append(",");
+					}
+					if (fields[i].isAnnotationPresent(TableField.class)) {
+						TableField column = fields[i].getAnnotation(TableField.class);
+						String columnName = column.value();
+						filedSql.append(columnName).append(",");
+					}
+				}
+			}
+		} catch (IllegalAccessException e) {
+			System.out.println(e.getMessage());
+			System.out.println("获取" + element + "的属性值失败！");
+		}
+		filedSql.deleteCharAt(filedSql.length()-1);
+		paramSql.deleteCharAt(paramSql.length()-1);
+
+		String sql = String.format(SqlMethodEnum.INSERT_ONE.getSql(), tableName, filedSql.toString(), paramSql.toString());
+		return sql;
+	}
+
+	/**
+	 * 拼接所有字段，不管是否有值
+	 * @param tableName
+	 * @param fields
+	 * @param element
+	 * @param params
+	 * @param <T>
+	 * @return
+	 */
+	private <T> String getInsertAllColumnSqlAndParams(String tableName, Field[] fields, T element, Object[] params) {
 		int length = fields.length;
 		// 添加参数占位符?
 		StringBuilder param = new StringBuilder(length*2);
@@ -130,7 +196,7 @@ public class DefaultSqlSession<T> implements MySqlSession<T>{
 		return sql;
 	}
 
-	private String getUpdateSqlAndParams(String tableName, Field[] fields, T element, Object[] params) {
+	private <T> String getUpdateSqlAndParams(String tableName, Field[] fields, T element, Object[] params) {
 		//拼接set后面的部分，如 name = v1, age = 18
 		StringBuilder param = new StringBuilder();
 		String idName = "";
@@ -140,7 +206,7 @@ public class DefaultSqlSession<T> implements MySqlSession<T>{
 				fields[i].setAccessible(true);
 				// 找到id对应的列名和值
 				if (fields[i].isAnnotationPresent(TableId.class)){
-					idName = fields[0].getAnnotation(TableId.class).value();
+					idName = fields[i].getAnnotation(TableId.class).value();
 					// id作为update sql 的最后一个参数
 					params[max-1] = fields[i].get(element);
 					if (params[max-1] == null){

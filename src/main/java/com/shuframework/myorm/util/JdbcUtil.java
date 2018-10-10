@@ -80,7 +80,7 @@ public class JdbcUtil {
 				connection.close();
 			}
 		} catch (SQLException e) {
-			throw new MyException("jdbc释放资源异常");
+			throw new MyException("jdbc释放资源异常"+e.getMessage());
 		}
 	}
 	
@@ -100,8 +100,7 @@ public class JdbcUtil {
 			resultNum = pstmt.executeUpdate();
 
 		} catch (SQLException e) {
-			e.printStackTrace();
-			String msg = initExceptionMsg(sql, Arrays.toString(params));
+			String msg = initExceptionMsg(e, sql, Arrays.toString(params));
 			throw new MyException(msg);
 		}finally {
 			releaseConn(connection, pstmt, null);
@@ -125,7 +124,7 @@ public class JdbcUtil {
 			resultNum = pstmt.executeUpdate();
 
 		} catch (SQLException e) {
-			String msg = initExceptionMsg(sql, params.toString());
+			String msg = initExceptionMsg(e, sql, params.toString());
 			throw new MyException(msg);
 		}finally {
 			releaseConn(connection, pstmt, null);
@@ -149,7 +148,7 @@ public class JdbcUtil {
 			resultSet = pstmt.executeQuery();
 
 		} catch (SQLException e) {
-			String msg = initExceptionMsg(sql, params.toString());
+			String msg = initExceptionMsg(e, sql, params.toString());
 			throw new MyException(msg);
 		}finally {
 			releaseConn(connection, pstmt, resultSet);
@@ -223,7 +222,7 @@ public class JdbcUtil {
 	 * @return
 	 * @throws Exception
 	 */
-	public static <T> T query2Bean(Connection connection, String sql, Class<T> clazz, List<?> params) throws Exception {
+	public static <T> T query2Bean(Connection connection, String sql, Class clazz, List<?> params) throws Exception {
 		List<T> list = query2ListBean(connection, sql, clazz, params);
 		return list.stream().findAny().orElse(null);
 	}
@@ -318,24 +317,12 @@ public class JdbcUtil {
 		return pstmt;
 	}
 
-	protected static String initExceptionMsg(String sql, String params) {
+	protected static String initExceptionMsg(Exception e, String sql, String params) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("执行语句出现异常。");
-		sb.append("sql：");
-		sb.append(sql);
-		sb.append("参数：");
-		sb.append(params);
+		sb.append("执行语句出现异常: ").append(e.getMessage()).append("\n");
+		sb.append("sql：").append(sql).append("\n");
+		sb.append("参数：").append(params);
 		return sb.toString();
-	}
-
-	protected static void initException(String sql, String params) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("执行语句出现异常。");
-		sb.append("sql：");
-		sb.append(sql);
-		sb.append("参数：");
-		sb.append(params);
-		throw new MyException(sb.toString());
 	}
 
 }

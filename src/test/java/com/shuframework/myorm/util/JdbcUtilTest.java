@@ -17,9 +17,9 @@ public class JdbcUtilTest {
 
     @Test
     public void query2Bean_test(){
-        Integer id = 1;
+        Long id = 1L;
 
-        String sql = String.format(SqlMethodEnum.SELECT_BY_ID.getSql(), "*", "sys_user");
+        String sql = String.format(SqlMethodEnum.SELECT_BY_ID.getSql(), "*", "sys_user", "id");
         List<Object> params = new ArrayList<>();
         params.add(id);
         SysUser user = null;
