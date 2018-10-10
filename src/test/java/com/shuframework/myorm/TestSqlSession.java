@@ -11,6 +11,7 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -21,46 +22,30 @@ import java.util.Map;
 public class TestSqlSession {
 
     @Test
-    public void query2Bean_test2(){
-        Integer id = 1;
+    public void insert_test1(){
+        MySqlSession sqlSession = new DefaultSqlSession();
 
-        String sql = String.format(SqlMethodEnum.SELECT_BY_ID.getSql(), "*", "sys_user");
-        List<Object> params = new ArrayList<>();
-        params.add(id);
-        SysUser user = null;
-        try {
-            Connection connection = DBManager.getConn();
-            user = JdbcUtil.query2Bean(connection, sql, SysUser.class, params);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println(user);
+        SysUser user = new SysUser();
+        user.setId(14L);
+        user.setName("test14");
+        user.setLoginName("test14");
+        user.setCreateTime(new Date());
+
+        int resultNum = sqlSession.insert(user);
+        System.out.println(resultNum);
     }
 
     @Test
-    public void query2Map_test2(){
-        Integer id = 1;
+    public void update_test1(){
+        MySqlSession sqlSession = new DefaultSqlSession();
 
-        String sql = String.format(SqlMethodEnum.SELECT_BY_ID.getSql(), "*", "sys_user");
-        List<Object> params = new ArrayList<>();
-        params.add(id);
-        Map<String, Object> map = null;
-        try {
-            Connection connection = DBManager.getConn();
-            map = JdbcUtil.query2Map(connection, sql, params);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println(map);
+        SysUser user = new SysUser();
+        user.setId(3L);
+        user.setName("test3");
+        user.setLoginName("test3");
+
+        int resultNum = sqlSession.updateById(user);
+        System.out.println(resultNum);
     }
 
-//    @Test
-//    public void query_test1(){
-//        MySqlSession sqlSession = new DefaultSqlSession();
-//
-//        String sql = "select * from sys_user where id = 1";
-//        List<?> params = null;
-//        ResultSet resultSet = sqlSession.executeQuery(sql, params);
-//        System.out.println(resultSet);
-//    }
 }

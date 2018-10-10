@@ -28,5 +28,9 @@ public @interface TableId {
 	 * @return
 	 */
 	IdTypeEnum type() default IdTypeEnum.AUTO;
+
+	String dataType() default "int";
+	int length() default 20;
+	int increment() default 1;
 	
 }

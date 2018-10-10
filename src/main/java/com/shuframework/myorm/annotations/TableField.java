@@ -30,4 +30,7 @@ public @interface TableField {
 	 */
 	boolean exist() default true;
 
+	String dataType() default "int";
+	int length() default 20;
+
 }

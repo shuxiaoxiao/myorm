@@ -1,6 +1,10 @@
 package com.shuframework.test.model;
 
 
+import com.shuframework.myorm.annotations.Table;
+import com.shuframework.myorm.annotations.TableField;
+import com.shuframework.myorm.annotations.TableId;
+
 import java.util.Date;
 
 /**
@@ -10,69 +14,85 @@ import java.util.Date;
  *
  * @author shuheng
  */
+@Table("sys_user")
 public class SysUser {
 
-
+    @TableId
     private Long id;
     /**
      * 名称
      */
+    @TableField("name")
     private String name;
     /**
      * 登录名
      */
+    @TableField("login_name")
     private String loginName;
     /**
      * 密码
      */
+    @TableField("pwd")
     private String pwd;
     /**
      * 性别  1男 2女
      */
+    @TableField("sex")
     private String sex;
     /**
      * 图标
      */
+    @TableField("icon")
     private String icon;
     /**
      * 手机号
      */
+    @TableField("phone_num")
     private String phoneNum;
     /**
      * 备用号
      */
+    @TableField("phone_num2")
     private String phoneNum2;
     /**
      * 地址
      */
+    @TableField("address")
     private String address;
     /**
      * 用户状态
      */
+    @TableField("enable")
     private String enable;
     /**
      * 部门id
      */
+    @TableField("dept_id")
     private String deptId;
     /**
      * 入职时间
      */
+    @TableField("create_time")
     private Date createTime;
     /**
      * 离职时间
      */
+    @TableField("leave_time")
     private Date leaveTime;
     /**
      * 用户类型
      */
+    @TableField("user_type")
     private String userType;
     /**
      * 排序号
      */
+    @TableField("sortid")
     private Integer sortid;
     /**
      * 更新时间
      */
+    @TableField("update_time")
     private Date updateTime;
 
 

@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +100,8 @@ public class JdbcUtil {
 			resultNum = pstmt.executeUpdate();
 
 		} catch (SQLException e) {
-			String msg = initExceptionMsg(sql, params.toString());
+			e.printStackTrace();
+			String msg = initExceptionMsg(sql, Arrays.toString(params));
 			throw new MyException(msg);
 		}finally {
 			releaseConn(connection, pstmt, null);
