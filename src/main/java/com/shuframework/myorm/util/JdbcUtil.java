@@ -67,16 +67,19 @@ public class JdbcUtil {
 	 * @param resultSet
 	 * @throws SQLException 
 	 */
-	public static void releaseConn(Connection connection, PreparedStatement pstmt, ResultSet resultSet)
-			throws SQLException {
-		if (resultSet != null) {
-			resultSet.close();
-		}
-		if (pstmt != null) {
-			pstmt.close();
-		}
-		if (connection != null) {
-			connection.close();
+	public static void releaseConn(Connection connection, PreparedStatement pstmt, ResultSet resultSet) {
+		try {
+			if (resultSet != null) {
+				resultSet.close();
+			}
+			if (pstmt != null) {
+				pstmt.close();
+			}
+			if (connection != null) {
+				connection.close();
+			}
+		} catch (SQLException e) {
+			throw new MyException("jdbc释放资源异常");
 		}
 	}
 	
@@ -99,11 +102,7 @@ public class JdbcUtil {
 			String msg = initExceptionMsg(sql, params.toString());
 			throw new MyException(msg);
 		}finally {
-			try {
-				releaseConn(connection, pstmt, null);
-			} catch (SQLException e) {
-				throw new MyException("jdbc释放资源异常");
-			}
+			releaseConn(connection, pstmt, null);
 		}
 		return resultNum;
 	}
@@ -127,17 +126,20 @@ public class JdbcUtil {
 			String msg = initExceptionMsg(sql, params.toString());
 			throw new MyException(msg);
 		}finally {
-			try {
-				releaseConn(connection, pstmt, null);
-			} catch (SQLException e) {
-				throw new MyException("jdbc释放资源异常");
-			}
+			releaseConn(connection, pstmt, null);
 		}
 		return resultNum;
 	}
 
-
-	public static ResultSet query(Connection connection, String sql, List<?> params){
+	/**
+	 * 关闭ResultSet后循环读取会有问题
+	 * @param connection
+	 * @param sql
+	 * @param params
+	 * @return
+	 */
+	@Deprecated
+	private static ResultSet query(Connection connection, String sql, List<?> params){
 		PreparedStatement pstmt = null;
 		ResultSet resultSet = null;
 		try {
@@ -148,11 +150,7 @@ public class JdbcUtil {
 			String msg = initExceptionMsg(sql, params.toString());
 			throw new MyException(msg);
 		}finally {
-			try {
-				releaseConn(connection, pstmt, null);
-			} catch (SQLException e) {
-				throw new MyException("jdbc释放资源异常");
-			}
+			releaseConn(connection, pstmt, resultSet);
 		}
 		return resultSet;
 	}
@@ -168,23 +166,6 @@ public class JdbcUtil {
 	 * @throws SQLException
 	 */
 	public static Map<String, Object> query2Map(Connection connection, String sql, List<?> params) throws SQLException {
-//		ResultSet resultSet = query(connection, sql, params);
-//		Map<String, Object> map = new HashMap<>();
-//		// 获取此 ResultSet 对象的列的编号、类型和属性。
-//		ResultSetMetaData metaData = resultSet.getMetaData();
-//		int col_len = metaData.getColumnCount();// 获取列的长度
-//		while (resultSet.next()) {
-//			for (int i = 0; i < col_len; i++) {
-//				String cols_name = metaData.getColumnName(i + 1);
-//				Object cols_value = resultSet.getObject(cols_name);
-////				// 列的值没有时，设置列值为""
-////				if (cols_value == null){
-////					cols_value = "";
-////				}
-//				map.put(cols_name, cols_value);
-//			}
-//		}
-//		return map;
 		List<Map<String, Object>> list = query2ListMap(connection, sql, params);
 		return list.stream().findAny().orElse(null);
 	}
@@ -199,7 +180,7 @@ public class JdbcUtil {
 	 * @throws SQLException
 	 */
 	public static List<Map<String, Object>> query2ListMap(Connection connection, String sql, List<?> params) throws SQLException {
-		//返回查询结果
+		//返回查询结果（关闭ResultSet后循环读取会有问题）
 //		ResultSet resultSet = query(connection, sql, params);
 		PreparedStatement pstmt = initStatement(connection, sql, params);
 		ResultSet resultSet = pstmt.executeQuery();
@@ -225,11 +206,8 @@ public class JdbcUtil {
 			list.add(map);
 		}
 		//释放资源
-		try {
-			releaseConn(connection, pstmt, null);
-		} catch (SQLException e) {
-			throw new MyException("jdbc释放资源异常");
-		}
+		releaseConn(connection, pstmt, resultSet);
+
 		return list;
 	}
 	
@@ -244,25 +222,6 @@ public class JdbcUtil {
 	 * @throws Exception
 	 */
 	public static <T> T query2Bean(Connection connection, String sql, Class<T> clazz, List<?> params) throws Exception {
-//		T bean = clazz.newInstance();
-//		PreparedStatement pstmt = initStatement(connection, sql, params);
-//		ResultSet resultSet = pstmt.executeQuery();// 返回查询结果
-//
-//		// 获取此 ResultSet 对象的列的编号、类型和属性。
-//		ResultSetMetaData metaData = resultSet.getMetaData();
-//		int col_len = metaData.getColumnCount();// 获取列的长度
-//		while (resultSet.next()) {
-//			for (int i = 0; i < col_len; i++) {
-//				String colsName = metaData.getColumnName(i + 1);
-//				Object colsValue = resultSet.getObject(colsName);
-////				// 列的值没有时，设置列值为""
-////				if (colsValue == null){
-////					colsValue = "";
-////				}
-//				MyBeanUtil.setProperty(bean, colsName, colsValue);
-//			}
-//		}
-//		return bean;
 		List<T> list = query2ListBean(connection, sql, clazz, params);
 		return list.stream().findAny().orElse(null);
 	}
@@ -278,7 +237,7 @@ public class JdbcUtil {
 	 * @throws Exception
 	 */
 	public static <T> List<T> query2ListBean(Connection connection, String sql, Class<T> clazz, List<?> params) throws Exception {
-		//返回查询结果
+		//返回查询结果（关闭ResultSet后循环读取会有问题）
 //		ResultSet resultSet = query(connection, sql, params);
 		PreparedStatement pstmt = initStatement(connection, sql, params);
 		ResultSet resultSet = pstmt.executeQuery();
@@ -305,11 +264,8 @@ public class JdbcUtil {
 		}
 
 		//释放资源
-		try {
-			releaseConn(connection, pstmt, null);
-		} catch (SQLException e) {
-			throw new MyException("jdbc释放资源异常");
-		}
+		releaseConn(connection, pstmt, resultSet);
+
 		return list;
 	}
 
