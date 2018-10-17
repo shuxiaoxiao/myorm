@@ -18,8 +18,16 @@ import com.shuframework.myorm.util.JdbcUtil;
 
 public class DefaultSqlSession implements MySqlSession{
 	
-	private Connection connection = DBManager.getConn();
+	private Connection connection;
+//	private Connection connection = DBManager.getConn();
 
+	public DefaultSqlSession() {
+		this.connection = DBManager.getConn();
+	}
+
+	public DefaultSqlSession(Connection connection) {
+		this.connection = connection;
+	}
 
 	@Override
 	public <T> int insert(T bean) {
