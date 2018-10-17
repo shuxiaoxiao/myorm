@@ -10,6 +10,14 @@ import com.shuframework.myorm.exception.UtilException;
  */
 public class ClassUtil {
 
+    public static ClassLoader getDefaultClassLoader() {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if(cl == null){
+            cl = ClassUtil.class.getClassLoader();
+        }
+        return cl;
+    }
+
 	/**
      * 判断是否为代理对象
      *
